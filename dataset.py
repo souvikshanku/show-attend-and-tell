@@ -10,12 +10,13 @@ from torchvision.io import read_image
 class MultiMnist(Dataset):
     def __init__(self, annotations_file, img_dir, device):
         self.img_labels = pd.read_csv(annotations_file, header=None)
-        self.num_classes = 11
-        self.end_token = 10
-        self.seq_len = 3
-
         self.img_dir = img_dir
         self.device = device
+
+        self.num_classes = 12
+        self.start_token = 10
+        self.end_token = 11
+        self.seq_len = 4
 
     def __len__(self):
         return len(self.img_labels)
@@ -33,9 +34,11 @@ class MultiMnist(Dataset):
         return image, label
 
     def one_hot_encode(self, label):
-        # 12 -> [1, 2]
-        tokens = list(map(int, str(label)))
-        # [1, 2] -> [1, 2, <end>]
+        tokens = [self.start_token]
+
+        # 42 -> [<start>, 4, 2]
+        tokens += list(map(int, str(label)))
+        # [<start>, 4, 2] -> [<start>, 4, 2, <end>]
         tokens += [self.end_token] * (self.seq_len - len(tokens))
 
         y = F.one_hot(torch.tensor(tokens), self.num_classes)
