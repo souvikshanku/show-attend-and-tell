@@ -94,6 +94,7 @@ class Decoder(nn.Module):
             output.append(out)
             alphas.append(alpha)
 
+        alphas = torch.stack(alphas)
         output = torch.stack(output)
         output = F.log_softmax(output, dim=-1)
         output = output.permute(1, 0, 2)

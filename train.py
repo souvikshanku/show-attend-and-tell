@@ -17,9 +17,12 @@ def train(encoder, decoder,  train_dataloader, num_epochs=1):
             imgs = imgs.clone().detach().float()
 
             img_features = encoder(imgs)
-            out, _ = decoder.forward(img_features, labels[:, :-1, :])
+            out, alphas = decoder.forward(img_features, labels[:, :-1, :])
 
             loss = - torch.sum(out * labels[:, 1:, :]) / out.shape[0]
+            att_reg = ((1 - alphas.sum(dim=0)) ** 2).mean()
+            loss += 1 * att_reg
+
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
