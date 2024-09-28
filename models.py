@@ -26,7 +26,6 @@ class Attention(nn.Module):
     def __init__(self, enc_dim):
         super(Attention, self).__init__()
 
-        # TODO: Make these dynamic
         self.W = nn.Linear(32, 128)
         self.U = nn.Linear(enc_dim, 128)
         self.v = nn.Linear(128, 1)
@@ -55,14 +54,16 @@ class Decoder(nn.Module):
     def __init__(self, enc_dim):
         super(Decoder, self).__init__()
         self.enc_dim = enc_dim
-        # self.context_size = 32
 
         self.encoder = Encoder()
         self.attention = Attention(self.enc_dim)
-        self.rnn = nn.LSTMCell(input_size=12 + 32, hidden_size=self.enc_dim)
+        self.rnn = nn.LSTMCell(
+            input_size=29 + 32,  # vocab_size + context_size
+            hidden_size=self.enc_dim
+        )
         self.init_h = nn.Linear(64, self.enc_dim)
         self.init_c = nn.Linear(64, self.enc_dim)
-        self.out_fc = nn.Linear(self.enc_dim, 12)
+        self.out_fc = nn.Linear(self.enc_dim, 29)
 
     def init_hiddens(self, img_features):
         batch_size = img_features.shape[0]

@@ -7,16 +7,16 @@ from torch.utils.data import Dataset
 from torchvision.io import read_image
 
 
-class MultiMnist(Dataset):
+class DoubleMnist(Dataset):
     def __init__(self, annotations_file, img_dir, device):
         self.img_labels = pd.read_csv(annotations_file, header=None)
         self.img_dir = img_dir
         self.device = device
 
-        self.num_classes = 12
-        self.start_token = 10
-        self.end_token = 11
-        self.seq_len = 4
+        vocab = "abcdefghijklmnopqrstuvwxyz "
+        self.vocab = dict(zip(list(vocab), range(len(vocab))))
+        self.vocab["<start>"] = 27
+        self.vocab["<end>"] = 28
 
     def __len__(self):
         return len(self.img_labels)
@@ -24,22 +24,21 @@ class MultiMnist(Dataset):
     def __getitem__(self, idx):
         img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
         image = read_image(img_path)
-
-        label = self.img_labels.iloc[idx, 1]
-        label = self.one_hot_encode(label)
+        label = self.img_labels.iloc[idx, 2]
+        label = self._get_ohe_label(label)
 
         image = image.to(self.device)
         label = label.to(self.device)
 
         return image, label
 
-    def one_hot_encode(self, label):
-        tokens = [self.start_token]
+    def _get_ohe_label(self, label):
+        tokens = [27]  # <start>
+        tokens += [self.vocab[char] for char in label]
+        extra = 15 - len(tokens)
+        tokens += [28] * extra  # <end>
 
-        # 42 -> [<start>, 4, 2]
-        tokens += list(map(int, str(label)))
-        # [<start>, 4, 2] -> [<start>, 4, 2, <end>]
-        tokens += [self.end_token] * (self.seq_len - len(tokens))
+        num_classes = len(self.vocab)
+        y = F.one_hot(torch.tensor(tokens), num_classes)
 
-        y = F.one_hot(torch.tensor(tokens), self.num_classes)
         return y
